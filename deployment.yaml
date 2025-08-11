@@ -1,0 +1,37 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: evgserver-deployment
+  labels:
+    app: evgserver
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: evgserver
+  template:
+    metadata:
+      labels:
+        app: evgserver
+    spec:
+      containers:
+        - name: evgserver
+          image: evgacr.azurecr.io/evgserver:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - secretRef:
+                name: app-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: evgserver-service
+spec:
+  selector:
+    app: evgserver
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: LoadBalancer
