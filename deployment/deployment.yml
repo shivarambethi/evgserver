@@ -1,4 +1,4 @@
-# --- ConfigMap ---
+# ConfigMap for application properties
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -12,19 +12,19 @@ data:
     spring.datasource.password=${DB_PASSWORD}
 
 ---
-# --- Secret ---
+# Secret for sensitive info (base64 encoded)
 apiVersion: v1
 kind: Secret
 metadata:
   name: driverserver-secret
 type: Opaque
 data:
-  db.username: cGxhY2Vob2xkZXJfdXNlcg==
-  db.password: cGxhY2Vob2xkZXJfcGFzcw==
-  db.url: amRiYzpteXNxbDovL3BsYWNlaG9sZGVyLWhvc3Q6MzMwNi9wbGFjZWhvbGRlcmRi
+  db.username: cGxhY2Vob2xkZXJfdXNlcg==      # placeholder_user (base64)
+  db.password: cGxhY2Vob2xkZXJfcGFzcw==      # placeholder_pass (base64)
+  db.url: amRiYzpteXNxbDovL3BsYWNlaG9sZGVyLWhvc3Q6MzMwNi9wbGFjZWhvbGRlcmRi  # jdbc:mysql://placeholder-host:3306/placeholderdb (base64)
 
 ---
-# --- Deployment ---
+# Deployment for driverserver
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -72,9 +72,10 @@ spec:
           volumeMounts:
             - name: config-volume
               mountPath: /config
+              readOnly: true
 
 ---
-# --- Service ---
+# Service to expose deployment externally
 apiVersion: v1
 kind: Service
 metadata:
