@@ -1,3 +1,28 @@
+# --- ConfigMap ---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: driverserver-config
+data:
+  application.properties: |
+    server.port=8080
+    elk.url=http://192.168.123.222:9200
+    # add other config here
+
+---
+# --- Secret ---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: driverserver-secret
+type: Opaque
+data:
+  db.username: cGxhY2Vob2xkZXJfdXNlcg==        # placeholder_user
+  db.password: cGxhY2Vob2xkZXJfcGFzcw==        # placeholder_pass
+  db.url: amRiYzpteXNxbDovL3BsYWNlaG9sZGVyLWhvc3Q6MzMwNi9wbGFjZWhvbGRlcmRi  # jdbc:mysql://placeholder-host:3306/placeholderdb
+
+---
+# --- Deployment ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -16,7 +41,7 @@ spec:
     spec:
       containers:
         - name: driverserver
-          image: evgacr.azurecr.io/driverserver:latest
+          image: youracrname.azurecr.io/driverserver:latest
           ports:
             - containerPort: 8080
           envFrom:
@@ -24,7 +49,9 @@ spec:
                 name: driverserver-config
             - secretRef:
                 name: driverserver-secret
+
 ---
+# --- Service ---
 apiVersion: v1
 kind: Service
 metadata:
