@@ -41,6 +41,8 @@ spec:
       labels:
         app: driverserver
     spec:
+      imagePullSecrets:                # <--- Added this section
+        - name: acr-auth
       volumes:
         - name: config-volume
           configMap:
