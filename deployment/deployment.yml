@@ -41,7 +41,7 @@ spec:
     spec:
       containers:
         - name: driverserver
-          image: youracrname.azurecr.io/driverserver:latest
+          image: evgacr.azurecr.io/driverserver:latest
           ports:
             - containerPort: 8080
           envFrom:
