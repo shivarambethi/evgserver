@@ -32,6 +32,7 @@ metadata:
   labels:
     app: driverserver
 spec:
+  spec:
   replicas: 2
   selector:
     matchLabels:
@@ -41,7 +42,7 @@ spec:
       labels:
         app: driverserver
     spec:
-      imagePullSecrets:                # <--- Added this section
+      imagePullSecrets:
         - name: acr-auth
       volumes:
         - name: config-volume
@@ -75,7 +76,6 @@ spec:
             - name: config-volume
               mountPath: /config
               readOnly: true
-
 ---
 # Service to expose deployment externally
 apiVersion: v1
