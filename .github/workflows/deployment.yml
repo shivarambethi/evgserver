@@ -34,7 +34,7 @@ jobs:
       - name: Build and Push Docker image
         run: |
           IMAGE_TAG=${{ github.sha }}
-          docker build -f evgserver/Dockerfile -t $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG .
+          docker build -f evgserver/Dockerfile -t $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG evgserver/
           docker push $ACR_NAME.azurecr.io/$IMAGE_NAME:$IMAGE_TAG
 
       # 5. Get AKS credentials
