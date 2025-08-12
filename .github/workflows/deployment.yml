@@ -3,7 +3,7 @@ name: Build and Deploy to AKS
 on:
   push:
     branches:
-      - main
+      - testing
 
 env:
   ACR_NAME: evgacr                        # ACR name (without .azurecr.io)
