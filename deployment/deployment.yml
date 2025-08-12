@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: driverserver
+  labels:
+    app: driverserver
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: driverserver
+  template:
+    metadata:
+      labels:
+        app: driverserver
+    spec:
+      containers:
+        - name: driverserver
+          image: evgacr.azurecr.io/driverserver:latest
+          ports:
+            - containerPort: 8080
+          envFrom:
+            - configMapRef:
+                name: driverserver-config
+            - secretRef:
+                name: driverserver-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: driverserver-service
+  labels:
+    app: driverserver
+spec:
+  selector:
+    app: driverserver
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: LoadBalancer
