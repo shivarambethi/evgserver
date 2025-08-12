@@ -6,7 +6,7 @@ metadata:
 data:
   application.properties: |
     server.port=8080
-    elk.url=http://192.168.123.222:9200
+    elk.url=http://dummy-elasticsearch:9200
     # add other config here
 
 ---
@@ -47,8 +47,22 @@ spec:
           envFrom:
             - configMapRef:
                 name: driverserver-config
-            - secretRef:
-                name: driverserver-secret
+          env:
+            - name: DB_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: driverserver-secret
+                  key: db.username
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: driverserver-secret
+                  key: db.password
+            - name: DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: driverserver-secret
+                  key: db.url
 
 ---
 # --- Service ---
