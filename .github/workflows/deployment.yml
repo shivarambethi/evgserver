@@ -7,7 +7,7 @@ on:
 
 env:
   ACR_NAME: evgacr                       # Your Azure Container Registry name (without .azurecr.io)
-  IMAGE_NAME: evgserver                  # Docker image name
+  IMAGE_NAME: driverserver                  # Docker image name
   RESOURCE_GROUP: aks-cicd-rg            # Azure resource group containing AKS
   CLUSTER_NAME: evg-k8s-cluster          # AKS cluster name
 
