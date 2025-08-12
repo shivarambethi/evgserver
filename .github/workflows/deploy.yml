@@ -1,63 +1,45 @@
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: driverserver-config
-data:
-  DB_HOST: "sqlserver.default.svc.cluster.local"
-  DB_PORT: "1433"
-  DB_NAME: "driversdb"
-  SPRING_PROFILES_ACTIVE: "prod"
+name: Build and Deploy to AKS
 
----
-apiVersion: v1
-kind: Secret
-metadata:
-  name: driverserver-secret
-type: Opaque
-stringData:
-  DB_USERNAME: "your_db_user"
-  DB_PASSWORD: "your_db_password"
-  JWT_SECRET: "your_jwt_secret_key"
+on:
+  push:
+    branches:
+      - testing   # Change to your deployment branch
 
----
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: driverserver
-  labels:
-    app: driverserver
-spec:
-  replicas: 2
-  selector:
-    matchLabels:
-      app: driverserver
-  template:
-    metadata:
-      labels:
-        app: driverserver
-    spec:
-      containers:
-      - name: driverserver
-        image: evgacr.azurecr.io/driverserver:latest
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 8080
-        envFrom:
-        - configMapRef:
-            name: driverserver-config
-        - secretRef:
-            name: driverserver-secret
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: driverserver-service
-spec:
-  selector:
-    app: driverserver
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 8080
-  type: LoadBalancer
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2. Log in to Azure
+      - name: Azure Login
+        uses: azure/login@v2
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+          # Create this secret in GitHub with your Azure Service Principal JSON
+
+      # 3. Log in to Azure Container Registry
+      - name: Azure ACR Login
+        run: az acr login --name ${{ secrets.ACR_NAME }}
+        # secrets.ACR_NAME = your ACR name (e.g., myregistry123)
+
+      # 4. Build & Push Docker Image to ACR
+      - name: Build and Push Docker image
+        run: |
+          IMAGE_NAME=${{ secrets.ACR_NAME }}.azurecr.io/driverserver:${{ github.sha }}
+          docker build -t $IMAGE_NAME .
+          docker push $IMAGE_NAME
+          echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
+
+      # 5. Set AKS Context
+      - name: Set AKS context
+        uses: azure/aks-set-context@v3
+        with:
+          resource-group: ${{ secrets.AKS_RG }}
+          cluster-name: ${{ secrets.AKS_CLUSTER }}
+
+      # 6. Update Kubernetes manifest with new image
+      - name: Update image in deploy.yml
