@@ -13,11 +13,11 @@ jobs:
     - name: Checkout repo
       uses: actions/checkout@v3
 
-    - name: Set up JDK 1.8.0_402
+    - name: Set up JDK 1.8.0_401
       uses: actions/setup-java@v3
       with:
         distribution: 'temurin'   # Eclipse Temurin JDK
-        java-version: '8.0.402'
+        java-version: '8.0.401'
 
     - name: Build with Maven
       run: mvn clean package -DskipTests
@@ -29,21 +29,21 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker build -t youracrname.azurecr.io/driverserver:${{ github.sha }} .
+        docker build -t evgacr.azurecr.io/driverserver:${{ github.sha }} .
 
     - name: Login to ACR
       run: |
-        az acr login --name youracrname
+        az acr login --name evgacr
 
     - name: Push Docker image to ACR
       run: |
-        docker push youracrname.azurecr.io/driverserver:${{ github.sha }}
+        docker push evgacr.azurecr.io/driverserver:${{ github.sha }}
 
     - name: Set AKS credentials
       run: |
-        az aks get-credentials --resource-group yourResourceGroup --name yourAKSCluster --overwrite-existing
+        az aks get-credentials --resource-group aks-cicd-rg --name evg-k8s-cluster --overwrite-existing
 
     - name: Deploy to AKS
       run: |
-        kubectl set image deployment/driverserver driverserver=youracrname.azurecr.io/driverserver:${{ github.sha }}
+        kubectl set image deployment/driverserver driverserver=evgacr.azurecr.io/driverserver:${{ github.sha }}
         kubectl rollout status deployment/driverserver
