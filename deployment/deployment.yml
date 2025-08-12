@@ -7,7 +7,9 @@ data:
   application.properties: |
     server.port=8080
     elk.url=http://dummy-elasticsearch:9200
-    # add other config here
+    spring.datasource.url=${DB_URL}
+    spring.datasource.username=${DB_USERNAME}
+    spring.datasource.password=${DB_PASSWORD}
 
 ---
 # --- Secret ---
@@ -17,9 +19,9 @@ metadata:
   name: driverserver-secret
 type: Opaque
 data:
-  db.username: cGxhY2Vob2xkZXJfdXNlcg==        # placeholder_user
-  db.password: cGxhY2Vob2xkZXJfcGFzcw==        # placeholder_pass
-  db.url: amRiYzpteXNxbDovL3BsYWNlaG9sZGVyLWhvc3Q6MzMwNi9wbGFjZWhvbGRlcmRi  # jdbc:mysql://placeholder-host:3306/placeholderdb
+  db.username: cGxhY2Vob2xkZXJfdXNlcg==
+  db.password: cGxhY2Vob2xkZXJfcGFzcw==
+  db.url: amRiYzpteXNxbDovL3BsYWNlaG9sZGVyLWhvc3Q6MzMwNi9wbGFjZWhvbGRlcmRi
 
 ---
 # --- Deployment ---
@@ -39,14 +41,18 @@ spec:
       labels:
         app: driverserver
     spec:
+      volumes:
+        - name: config-volume
+          configMap:
+            name: driverserver-config
+            items:
+              - key: application.properties
+                path: application.properties
       containers:
         - name: driverserver
           image: evgacr.azurecr.io/driverserver:latest
           ports:
             - containerPort: 8080
-          envFrom:
-            - configMapRef:
-                name: driverserver-config
           env:
             - name: DB_USERNAME
               valueFrom:
@@ -63,6 +69,9 @@ spec:
                 secretKeyRef:
                   name: driverserver-secret
                   key: db.url
+          volumeMounts:
+            - name: config-volume
+              mountPath: /config
 
 ---
 # --- Service ---
