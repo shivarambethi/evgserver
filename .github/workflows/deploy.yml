@@ -1,31 +1,49 @@
-name: Build and Deploy to AKS
+name: Java CI/CD to AKS
 
 on:
   push:
     branches:
-      - main  # or your branch
+      - main  # change if you use another branch
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+    - name: Checkout repo
+      uses: actions/checkout@v3
 
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+    - name: Set up JDK 1.8.0_402
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'temurin'   # Eclipse Temurin JDK
+        java-version: '8.0.402'
 
-      - name: Build and push Docker image to ACR
-        run: |
-          az acr build --registry evgacr --image evgserver:${{ github.sha }} .
+    - name: Build with Maven
+      run: mvn clean package -DskipTests
 
-      - name: Get AKS credentials
-        run: |
-          az aks get-credentials --resource-group aks-cicd-rg --name evg-kubernetes-cluster
+    - name: Log in to Azure CLI
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-      - name: Update Kubernetes deployment image
-        run: |
-          kubectl set image deployment/evgserver-deployment evgserver=evgacr.azurecr.io/evgserver:${{ github.sha }}
+    - name: Build Docker image
+      run: |
+        docker build -t youracrname.azurecr.io/driverserver:${{ github.sha }} .
+
+    - name: Login to ACR
+      run: |
+        az acr login --name youracrname
+
+    - name: Push Docker image to ACR
+      run: |
+        docker push youracrname.azurecr.io/driverserver:${{ github.sha }}
+
+    - name: Set AKS credentials
+      run: |
+        az aks get-credentials --resource-group yourResourceGroup --name yourAKSCluster --overwrite-existing
+
+    - name: Deploy to AKS
+      run: |
+        kubectl set image deployment/driverserver driverserver=youracrname.azurecr.io/driverserver:${{ github.sha }}
+        kubectl rollout status deployment/driverserver
