@@ -58,7 +58,7 @@ jobs:
 
       # 8. Apply Kubernetes manifests (creates deployment if not exist)
       - name: Apply Kubernetes manifests
-        run: kubectl apply -f k8s/deployment.yml
+        run: kubectl apply -f deployment/deployment.yml
 
       # 9. Update deployment image
       - name: Update Deployment image
