@@ -1,53 +1,63 @@
-name: Java CI/CD to AKS
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: driverserver-config
+data:
+  DB_HOST: "sqlserver.default.svc.cluster.local"
+  DB_PORT: "1433"
+  DB_NAME: "driversdb"
+  SPRING_PROFILES_ACTIVE: "prod"
 
-on:
-  push:
-    branches:
-      - testing   # ✅ changed to testing branch
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: driverserver-secret
+type: Opaque
+stringData:
+  DB_USERNAME: "your_db_user"
+  DB_PASSWORD: "your_db_password"
+  JWT_SECRET: "your_jwt_secret_key"
 
-jobs:
-  build-and-deploy:
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Checkout repo
-      uses: actions/checkout@v3
-
-    - name: Set up JDK 1.8
-      uses: actions/setup-java@v3
-      with:
-        distribution: 'temurin'
-        java-version: '1.8'
-
-    - name: Build with Maven
-      run: mvn clean package -DskipTests
-
-    - name: Log in to Azure CLI
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
-
-    - name: Build Docker image
-      run: |
-        docker build -t evgacr.azurecr.io/driverserver:${{ github.sha }} .
-
-    - name: Login to ACR
-      run: |
-        az acr login --name evgacr
-
-    - name: Push Docker image to ACR
-      run: |
-        docker push evgacr.azurecr.io/driverserver:${{ github.sha }}
-
-    - name: Set AKS credentials
-      run: |
-        az aks get-credentials \
-          --resource-group aks-cicd-rg \
-          --name evg-k8s-cluster \
-          --overwrite-existing
-
-    - name: Deploy to AKS
-      run: |
-        kubectl set image deployment/driverserver \
-          driverserver=evgacr.azurecr.io/driverserver:${{ github.sha }}
-        kubectl rollout status deployment/driverserver
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: driverserver
+  labels:
+    app: driverserver
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: driverserver
+  template:
+    metadata:
+      labels:
+        app: driverserver
+    spec:
+      containers:
+      - name: driverserver
+        image: evgacr.azurecr.io/driverserver:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        envFrom:
+        - configMapRef:
+            name: driverserver-config
+        - secretRef:
+            name: driverserver-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: driverserver-service
+spec:
+  selector:
+    app: driverserver
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+  type: LoadBalancer
