@@ -3,7 +3,7 @@ name: Build and Deploy to AKS
 on:
   push:
     branches:
-      - testing   # Change to your deployment branch
+      - main   # Change if you use another branch
 
 jobs:
   build-and-deploy:
@@ -14,19 +14,19 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2. Log in to Azure
+      # 2. Azure Login
       - name: Azure Login
         uses: azure/login@v2
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
-          # Create this secret in GitHub with your Azure Service Principal JSON
+          # This must be JSON from `az ad sp create-for-rbac --sdk-auth`
 
-      # 3. Log in to Azure Container Registry
+      # 3. Azure ACR Login
       - name: Azure ACR Login
-        run: az acr login --name ${{ secrets.ACR_NAME }}
-        # secrets.ACR_NAME = your ACR name (e.g., myregistry123)
+        run: |
+          az acr login --name ${{ secrets.ACR_NAME }}
 
-      # 4. Build & Push Docker Image to ACR
+      # 4. Build & Push Docker Image
       - name: Build and Push Docker image
         run: |
           IMAGE_NAME=${{ secrets.ACR_NAME }}.azurecr.io/driverserver:${{ github.sha }}
@@ -34,7 +34,7 @@ jobs:
           docker push $IMAGE_NAME
           echo "IMAGE_NAME=$IMAGE_NAME" >> $GITHUB_ENV
 
-      # 5. Set AKS Context
+      # 5. Set AKS context
       - name: Set AKS context
         uses: azure/aks-set-context@v3
         with:
@@ -42,4 +42,11 @@ jobs:
           cluster-name: ${{ secrets.AKS_CLUSTER }}
 
       # 6. Update Kubernetes manifest with new image
-      - name: Update image in deploy.yml
+      - name: Update image in deployment.yml
+        run: |
+          sed -i "s|image: .*|image: $IMAGE_NAME|g" k8s/deployment.yml
+
+      # 7. Deploy to AKS
+      - name: Apply Kubernetes manifests
+        run: |
+          kubectl apply -f k8s/
